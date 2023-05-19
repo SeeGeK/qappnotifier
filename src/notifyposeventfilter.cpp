@@ -1,6 +1,6 @@
-#include <QEvent>
+#include "notifyposeventfilter.h"
 
-#include "../include/notifyposeventfilter.h"
+#include <QEvent>
 
 NotifyPosEventFilter::NotifyPosEventFilter(QObject *parent)
   : QObject(parent)
@@ -10,7 +10,7 @@ bool
 NotifyPosEventFilter::eventFilter(QObject *obj, QEvent *event)
 {
     if (event->type() == QEvent::Move || event->type() == QEvent::Resize) {
-        updated();
+        emit updated();
     }
 
     return QObject::eventFilter(obj, event);

@@ -1,7 +1,7 @@
 ﻿#ifndef NOTIFYDEFS_H
 #define NOTIFYDEFS_H
 
-#include <QString>
+namespace notify_style {
 
 const int NOTIFY_WIDTH     = 300;
 const int NOTIFY_HEIGHT    = 70;
@@ -13,8 +13,7 @@ const int NOTIFY_ROOT_HOFFSET = 2;
 const int NOTIFY_ROOT_VOFFSET = 2;
 const int NOTIFY_MAX_VISIBLE  = 5;
 
-const QString NOTIFY_INFOSTYLE  =
-    "QWidget {"
+const auto * const NOTIFY_INFOSTYLE = "QWidget {"
     "   background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 \"#37a0e3\", stop: 1 \"#217fba\");"
     "   border-radius: 2px;"
     "   color: white;"
@@ -24,7 +23,8 @@ const QString NOTIFY_INFOSTYLE  =
     "   border: none;"
     "}";
 
-const QString NOTIFY_WARNINGSTYLE  =
+
+const auto * const NOTIFY_WARNINGSTYLE  =
     "QWidget {"
     "   background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 \"#efd22a\", stop: 1 \"#d5bb24\");"
     "   border-radius: 2px;"
@@ -35,7 +35,7 @@ const QString NOTIFY_WARNINGSTYLE  =
     "   border: none;"
     "}";
 
-const QString NOTIFY_CRITICALSTYLE  =
+const auto * const NOTIFY_CRITICALSTYLE  =
     "QWidget {"
     "   background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 \"#e33737\", stop: 1 \"#ba2020\");"
     "   border-radius: 2px;"
@@ -45,5 +45,6 @@ const QString NOTIFY_CRITICALSTYLE  =
     "   color: white;"
     "   border: none;"
     "}";
+}
 
 #endif

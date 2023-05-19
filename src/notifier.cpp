@@ -1,18 +1,12 @@
-﻿#include "../notifier.h"
-#include "../include/notifierprivate.h"
-#include "../include/notifydefs.h"
-#include "../include/notifywidget.h"
+﻿#include "qappnotifier/notifier.h"
+#include "notifierprivate.h"
+#include "notifydefs.h"
+#include "notifywidget.h"
 
 Notifier::Notifier(QWidget *rootWidget)
-    : QObject(nullptr), m_d_ptr(new NotifierPrivate(this))
+    : QObject(nullptr), d_ptr(new NotifierPrivate(this, rootWidget))
 {
     Q_ASSERT(rootWidget);
-
-    Q_D(Notifier);
-    d->q_ptr = this;
-    d->initialize(rootWidget);
-
-    connect(rootWidget, &QObject::destroyed, this, &QObject::deleteLater);
 }
 
 Notifier::~Notifier()
@@ -22,49 +16,67 @@ Notifier::~Notifier()
 }
 
 void
-Notifier::setTransparentForMouseEvents(bool tme)
+Notifier::enableCloseOnMouseClick(bool tme)
 {
     Q_D(Notifier);
-    d->m_transparentForMouse = tme;
-    d->m_notifyWidget->setAttribute(Qt::WA_TransparentForMouseEvents,
-                                            d->m_transparentForMouse);
+    d->enableCloseOnMouseClick(tme);
+}
+
+bool
+Notifier::isEnabledCloseOnMouseClick() const
+{
+    Q_D(const Notifier);
+    return d->isEnabledCloseOnMouseClick();
 }
 
 void
 Notifier::clear()
 {
     Q_D(Notifier);
-    for (auto w : d->m_notifyList) {
-        w->closeAnimated();
-    }
+    d->clear();
 }
 
-Notifier::Align
+Notify::Align
 Notifier::getAlign() const
 {
-    return m_align;
+    Q_D(const Notifier);
+    return d->getAlign();
 }
 
 void
-Notifier::setAlign(const Align &align)
+Notifier::setAlign(const Notify::Align &align)
 {
-    m_align = align;
+    Q_D(Notifier);
+    d->setAlign(align);
 }
+
+void
+Notifier::notify(const QString &title, const QString &text, Notify::MessageType type, int msec)
+{
+    Q_D(Notifier);
+    d->p_notify(title, text, type, msec);
+}
+
+namespace Notify
+{
 
 static Notifier *_rnotifier = nullptr;
 
 void
-rNotify(const QString &title, const QString &text, Notify::NotifyType type, int msec)
+setNotifier(Notifier *n)
+{
+    if (n) {
+        _rnotifier = n;
+    }
+}
+
+void
+notify(const QString &title, const QString &text, Notify::MessageType type, int msec)
 {
     if (_rnotifier) {
         _rnotifier->notify(title, text, type, msec);
     }
 }
 
-void
-setRNotifier(Notifier *n)
-{
-    if (n) {
-        _rnotifier = n;
-    }
+
 }

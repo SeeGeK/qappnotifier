@@ -1,8 +1,9 @@
 ﻿#ifndef NOTIFYWIDGET_H
 #define NOTIFYWIDGET_H
 
+#include "qappnotifier/notifytypes.h"
+
 #include <QWidget>
-#include "notifytypes.h"
 
 class QLabel;
 class QPropertyAnimation;
@@ -18,18 +19,18 @@ public:
     void showAnimated();
     void closeAnimated();
     void setData(const QString &title, const QString &text);
-    void setType(Notify::NotifyType type);
+    void setType(Notify::MessageType type);
     void setTransparentForMouseEvents(bool tme);
 
 private:
-    QLabel *m_titleLabel;
-    QLabel *m_infoLabel;
+    QLabel *m_titleLabel = nullptr;
+    QLabel *m_infoLabel = nullptr;
 
-    QGraphicsOpacityEffect *gdse;
-    QPropertyAnimation *animation;
-    Notify::NotifyType m_type = Notify::Info;
+    QGraphicsOpacityEffect *m_gdse = nullptr;
+    QPropertyAnimation *m_animation = nullptr;
+    Notify::MessageType m_type = Notify::Info;
 
-    QTimer *m_closeTimer;
+    QTimer *m_closeTimer = nullptr;
 
     bool event(QEvent *e) override;
     void mouseReleaseEvent(QMouseEvent *e) override;

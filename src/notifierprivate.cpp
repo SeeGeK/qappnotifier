@@ -1,3 +1,9 @@
+#include "notifierprivate.h"
+#include "notifydefs.h"
+#include "notifywidget.h"
+
+#include "qappnotifier/notifier.h"
+
 #include <QDebug>
 #include <QDialog>
 #include <QLabel>
@@ -5,48 +11,20 @@
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
-
-#include "../include/notifierprivate.h"
-#include "../include/notifydefs.h"
-#include "../include/notifywidget.h"
-
-#include "../notifier.h"
 #include <QDesktopWidget>
 
-NotifierPrivate::NotifierPrivate(Notifier *q_ptr)
+using namespace notify_style;
+
+NotifierPrivate::NotifierPrivate(Notifier *q_ptr, QWidget *rootWidget)
   : q_ptr(q_ptr)
-{}
-
-void NotifierPrivate::initialize(QWidget *w)
+  , m_filterEvent(new NotifyPosEventFilter(q_ptr))
 {
-    Q_ASSERT(w);
+    Q_ASSERT(rootWidget);
 
-    Q_Q(Notifier);
-    m_filterEvent = new NotifyPosEventFilter(q);
-    setRootWidget(w);
-    initialNotifyWidget();
-    QObject::connect(q, &Notifier::notify,
-                     [this](const QString &title, const QString &text, Notify::NotifyType type,
-                            int msec) { p_notify(title, text, type, msec); });
+    QObject::connect(rootWidget, &QObject::destroyed, q_ptr, &QObject::deleteLater);
 
-    QObject::connect(q, &Notifier::updatePosition, [this]() { updatePosition(); });
-}
+    applyRootWidget(rootWidget);
 
-void
-NotifierPrivate::setRootWidget(QWidget *w)
-{
-    resetEventFilter();
-
-    if (w) {
-        m_rootWidget = w;
-    }
-
-    updateEventFilter();
-}
-
-void
-NotifierPrivate::initialNotifyWidget()
-{
     m_notifyWidget = new QWidget(m_rootWidget);
     m_notifyWidget->setFixedWidth(NOTIFY_WIDTH);
     m_notifyLayout = new QVBoxLayout(m_notifyWidget);
@@ -62,9 +40,34 @@ NotifierPrivate::initialNotifyWidget()
     }
 }
 
+void
+NotifierPrivate::applyRootWidget(QWidget *w)
+{
+    resetEventFilter();
+
+    if (w) {
+        m_rootWidget = w;
+    }
+
+    updateEventFilter();
+}
+
+Notify::Align
+NotifierPrivate::getAlign() const
+{
+    return m_align;
+}
+
+void
+NotifierPrivate::setAlign(const Notify::Align &align)
+{
+    m_align = align;
+}
+
+
 NotifyWidget *
 NotifierPrivate::createNotifyWidget(const QString &title, const QString &text,
-                                    Notify::NotifyType type, int msec)
+                                    Notify::MessageType type, int msec)
 {
     auto widget = new NotifyWidget(nullptr, msec);
     widget->setData(title, text);
@@ -86,7 +89,7 @@ NotifierPrivate::createNotifyWidget(const QString &title, const QString &text,
         m_notifyList.removeOne(widget);
         int addH = m_notifyList.size() ? (m_notifyList.size() - 1) * NOTIFY_SPACING : 0;
         m_notifyWidget->setFixedHeight(m_notifyList.size() * NOTIFY_HEIGHT + addH);
-        q->updatePosition();
+        updateNotifiersPositions();
     });
 
     widget->setTransparentForMouseEvents(m_transparentForMouse);
@@ -102,8 +105,7 @@ NotifierPrivate::resetEventFilter()
 {
     Q_Q(Notifier);
 
-    QObject::disconnect(m_filterEvent, &NotifyPosEventFilter::updated, q,
-                        &Notifier::updatePosition);
+    QObject::disconnect(m_connection);
 
     if (m_rootWidget) {
         m_rootWidget->removeEventFilter(m_filterEvent);
@@ -119,18 +121,19 @@ NotifierPrivate::updateEventFilter()
         m_rootWidget->installEventFilter(m_filterEvent);
     }
 
-    QObject::connect(m_filterEvent, &NotifyPosEventFilter::updated, q, &Notifier::updatePosition);
+    m_connection = QObject::connect(m_filterEvent, &NotifyPosEventFilter::updated,
+                                    q, [this](){updateNotifiersPositions();});
 }
 
 void
-NotifierPrivate::p_notify(const QString &title, const QString &text, Notify::NotifyType type,
+NotifierPrivate::p_notify(const QString &title, const QString &text, Notify::MessageType type,
                           int msec)
 {
     Q_Q(Notifier);
 
     auto notifyWidget = createNotifyWidget(title, text, type, msec);
     notifyWidget->showAnimated();
-    q->updatePosition();
+    updateNotifiersPositions();
 }
 
 QRect
@@ -149,7 +152,7 @@ wholeDisplayGeometry()
 }
 
 void
-NotifierPrivate::updatePosition()
+NotifierPrivate::updateNotifiersPositions()
 {
     Q_Q(Notifier);
 
@@ -159,7 +162,7 @@ NotifierPrivate::updatePosition()
     auto wrect = m_rootWidget ? m_rootWidget->rect()
                               : wholeDisplayGeometry();
 
-    if (q->getAlign() == Notifier::Left) {
+    if (m_align == Notify::Left) {
         x = NOTIFY_ROOT_HOFFSET;
         y = wrect.height() - m_notifyWidget->height() - NOTIFY_ROOT_VOFFSET;
     } else {
@@ -168,4 +171,27 @@ NotifierPrivate::updatePosition()
     }
 
     m_notifyWidget->setGeometry(x, y, 0, 0);
+}
+
+
+void
+NotifierPrivate::enableCloseOnMouseClick(bool enable)
+{
+    m_transparentForMouse = !enable;
+    m_notifyWidget->setAttribute(Qt::WA_TransparentForMouseEvents,
+                                 m_transparentForMouse);
+}
+
+bool
+NotifierPrivate::isEnabledCloseOnMouseClick() const
+{
+    return m_transparentForMouse;
+}
+
+void
+NotifierPrivate::clear()
+{
+    for (auto w = m_notifyList.begin(); w != m_notifyList.end(); w++) {
+        (*w)->closeAnimated();
+    }
 }

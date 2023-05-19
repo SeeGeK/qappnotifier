@@ -1,4 +1,7 @@
-﻿#include <QVBoxLayout>
+﻿#include "notifywidget.h"
+#include "notifydefs.h"
+
+#include <QVBoxLayout>
 #include <QLabel>
 #include <QGraphicsOpacityEffect>
 #include <QPropertyAnimation>
@@ -6,8 +9,7 @@
 #include <QEvent>
 #include <QMouseEvent>
 
-#include "../include/notifywidget.h"
-#include "../include/notifydefs.h"
+using namespace notify_style;
 
 NotifyWidget::NotifyWidget(QWidget *parent, int msec) : QWidget(parent) {
     QVBoxLayout *layout = new QVBoxLayout(this);
@@ -37,46 +39,46 @@ NotifyWidget::NotifyWidget(QWidget *parent, int msec) : QWidget(parent) {
 }
 
 void NotifyWidget::createAnimation(int msec) {
-    gdse = new QGraphicsOpacityEffect(this);
-    setGraphicsEffect(gdse);
+    m_gdse = new QGraphicsOpacityEffect(this);
+    setGraphicsEffect(m_gdse);
 
-    animation = new QPropertyAnimation(gdse, "opacity");
-    animation->setStartValue(0.0);
-    animation->setEndValue(NOTIFY_MAX_OPACITY);
-    animation->setDuration(NOTIFY_ANIMATION_DURATION);
+    m_animation = new QPropertyAnimation(m_gdse, "opacity");
+    m_animation->setStartValue(0.0);
+    m_animation->setEndValue(NOTIFY_MAX_OPACITY);
+    m_animation->setDuration(NOTIFY_ANIMATION_DURATION);
 
     m_closeTimer = new QTimer;
     m_closeTimer->setInterval(msec);
     m_closeTimer->setSingleShot(true);
 
-    QObject::connect(animation, &QPropertyAnimation::finished, [this](){
-        if (animation->direction() == QAbstractAnimation::Forward) {
-            animation->setDirection(QAbstractAnimation::Backward);
+    QObject::connect(m_animation, &QPropertyAnimation::finished, [this](){
+        if (m_animation->direction() == QAbstractAnimation::Forward) {
+            m_animation->setDirection(QAbstractAnimation::Backward);
             m_closeTimer->start();
         } else {
             this->close();
         }
     });
 
-    connect(m_closeTimer, &QTimer::timeout, animation, [this](){animation->start();});
-    animation->setDirection(QAbstractAnimation::Forward);
+    connect(m_closeTimer, &QTimer::timeout, m_animation, [this](){m_animation->start();});
+    m_animation->setDirection(QAbstractAnimation::Forward);
 }
 
 void NotifyWidget::showAnimated() {
-    animation->start();
+    m_animation->start();
     show();
 }
 
 void NotifyWidget::closeAnimated() {
     const int CLOSE_DURATION = NOTIFY_ANIMATION_DURATION;
-    animation->setDuration(CLOSE_DURATION);
-    animation->stop();
-    animation->start();
+    m_animation->setDuration(CLOSE_DURATION);
+    m_animation->stop();
+    m_animation->start();
 }
 
 NotifyWidget::~NotifyWidget() {
-    animation->deleteLater();
-    gdse->deleteLater();
+    m_animation->deleteLater();
+    m_gdse->deleteLater();
 }
 
 void NotifyWidget::setData(const QString &title, const QString &text) {
@@ -95,7 +97,7 @@ void NotifyWidget::setData(const QString &title, const QString &text) {
     m_infoLabel->setText(text);
 }
 
-void NotifyWidget::setType(Notify::NotifyType type)
+void NotifyWidget::setType(Notify::MessageType type)
 {
     m_type = type;
 

@@ -1,9 +1,8 @@
 #ifndef NOTIFIERPRIVATE_H
 #define NOTIFIERPRIVATE_H
 
-#include <QObject>
-#include "notifytypes.h"
 #include "notifyposeventfilter.h"
+#include "qappnotifier/notifytypes.h"
 
 class QString;
 class QWidget;
@@ -18,10 +17,11 @@ class NotifierPrivate
 {
     Q_DECLARE_PUBLIC(Notifier)
 public:
-    NotifierPrivate(Notifier *q_ptr);
-    void initialize(QWidget *w);
+    NotifierPrivate(Notifier *q_ptr, QWidget *w);
 
 private:
+    Notifier *q_ptr = nullptr;
+
     QWidget *m_rootWidget       = nullptr;
     QWidget *m_notifyWidget     = nullptr;
     QVBoxLayout *m_notifyLayout = nullptr;
@@ -29,28 +29,36 @@ private:
     QPropertyAnimation *m_closeAnimation = nullptr;
     QTimer *m_animationTimer = nullptr;
 
+    NotifyPosEventFilter *m_filterEvent = nullptr;
+
     QList<NotifyWidget *> m_notifyList;
 
     int m_activeNotifiers = 0;
-    bool m_transparentForMouse = false;
 
-    void setRootWidget(QWidget *w);
-    void initialNotifyWidget();
+    void applyRootWidget(QWidget *w);
+
+    Notify::Align m_align = Notify::Left;
+    Notify::Align getAlign() const;
+    void setAlign(const Notify::Align &align);
+
     NotifyWidget *createNotifyWidget(const QString &title, const QString &text,
-                                     Notify::NotifyType type, int msec);
-
-    NotifyPosEventFilter *m_filterEvent;
+                                     Notify::MessageType type, int msec);
 
     void resetEventFilter();
     void updateEventFilter();
 
     void p_notify(const QString &title, const QString &text,
-                  Notify::NotifyType type = Notify::Info,
+                  Notify::MessageType type = Notify::Info,
                   int msec = 1750);
 
-    void updatePosition();
+    void updateNotifiersPositions();
+    QMetaObject::Connection m_connection;
 
-    Notifier *q_ptr = nullptr;
+    bool m_transparentForMouse = false;
+    void enableCloseOnMouseClick(bool enable);
+    bool isEnabledCloseOnMouseClick() const;
+
+    void clear();
 };
 
 #endif // NOTIFIERPRIVATE_H
